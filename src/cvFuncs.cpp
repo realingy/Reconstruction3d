@@ -15,6 +15,7 @@
 // choose the corresponding points in the stereo images for 3d reconstruction
 void GetPair( cv::Mat &imgL, cv::Mat &imgR, vector<cv::Point2f> &ptsL, vector<cv::Point2f> &ptsR ) 
 {
+	using namespace cv;
 	cv::Mat descriptorsL, descriptorsR;
 	double tt = (double)cv::getTickCount();
 
@@ -23,12 +24,12 @@ void GetPair( cv::Mat &imgL, cv::Mat &imgR, vector<cv::Point2f> &ptsL, vector<cv
 	detector->detect( imgL, keypointsL );
 	detector->detect( imgR, keypointsR );
 
-	Ptr<DescriptorExtractor> de = DescriptorExtractor::create(DESCRIPTOR_TYPE);
+	cv::Ptr<cv::DescriptorExtractor> de = cv::DescriptorExtractor::create(DESCRIPTOR_TYPE);
 	//SurfDescriptorExtractor de(4,2,true);
 	de->compute( imgL, keypointsL, descriptorsL );
 	de->compute( imgR, keypointsR, descriptorsR );
 
-	tt = ((double)getTickCount() - tt)/getTickFrequency(); // 620*555 pic, about 2s for SURF, 120s for SIFT
+	tt = ((double)cv::getTickCount() - tt)/cv::getTickFrequency(); // 620*555 pic, about 2s for SURF, 120s for SIFT
 
 	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create( MATCHER_TYPE );
 	vector<vector<DMatch>> matches;
@@ -85,13 +86,13 @@ void GetPair( cv::Mat &imgL, cv::Mat &imgR, vector<cv::Point2f> &ptsL, vector<cv
 		Scalar::all(-1), Scalar::all(-1), matchesMask, DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 	char title[50];
 	sprintf_s(title, 50, "%.3f s, %d matches, %d passed", tt, matches.size(), cnt);
-	imshow(title, outImg);
-	waitKey();
+	cv::imshow(title, outImg);
+	cv::waitKey();
 }
 
 
 // used for doing delaunay trianglation with opencv function
-bool isGoodTri( Vec3i &v, vector<Vec3i> & tri ) 
+bool isGoodTri( cv::Vec3i &v, vector<cv::Vec3i> & tri ) 
 {
 	int a = v[0], b = v[1], c = v[2];
 	v[0] = min(a,min(b,c));
@@ -99,10 +100,10 @@ bool isGoodTri( Vec3i &v, vector<Vec3i> & tri )
 	v[1] = a+b+c-v[0]-v[2];
 	if (v[0] == -1) return false;
 
-	vector<Vec3i>::iterator iter = tri.begin();
+	vector<cv::Vec3i>::iterator iter = tri.begin();
 	for(;iter!=tri.end();iter++)
 	{
-		Vec3i &check = *iter;
+		cv::Vec3i &check = *iter;
 		if (check[0]==v[0] &&
 			check[1]==v[1] &&
 			check[2]==v[2])
@@ -118,18 +119,18 @@ bool isGoodTri( Vec3i &v, vector<Vec3i> & tri )
 	return false;
 }
 
-void TriSubDiv( vector<Point2f> &pts, Mat &img, vector<Vec3i> &tri ) 
+void TriSubDiv( vector<cv::Point2f> &pts, cv::Mat &img, vector<cv::Vec3i> &tri ) 
 {
-	CvSubdiv2D* subdiv;//The subdivision itself // 细分 
+	cv::CvSubdiv2D* subdiv;//The subdivision itself // 细分 
 	CvMemStorage* storage = cvCreateMemStorage(0); ;//Storage for the Delaunay subdivsion //用来存储三角剖分 
-	Rect rc = Rect(0,0, img.cols, img.rows); //Our outer bounding box //我们的外接边界盒子 
+	cv::Rect rc = cv::Rect(0,0, img.cols, img.rows); //Our outer bounding box //我们的外接边界盒子 
 
-	subdiv = cvCreateSubdiv2D( CV_SEQ_KIND_SUBDIV2D, sizeof(*subdiv),
-		sizeof(CvSubdiv2DPoint),
-		sizeof(CvQuadEdge2D),
+	subdiv = cv::cvCreateSubdiv2D( CV_SEQ_KIND_SUBDIV2D, sizeof(*subdiv),
+		sizeof(cv::CvSubdiv2DPoint),
+		sizeof(cv::CvQuadEdge2D),
 		storage );//为数据申请空间  
 
-	cvInitSubdivDelaunay2D( subdiv, rc );//rect sets the bounds 
+	cv::cvInitSubdivDelaunay2D( subdiv, rc );//rect sets the bounds 
 
 	//如果我们的点集不是32位的，在这里我们将其转为CvPoint2D32f，如下两种方法。
 	for (size_t i = 0; i < pts.size(); i++)
